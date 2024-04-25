@@ -1,0 +1,1 @@
+dir /B *.* > dir_file.txt

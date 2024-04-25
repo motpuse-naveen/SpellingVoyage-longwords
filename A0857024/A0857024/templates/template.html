@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <div class="modeSelectContainer mode{{levelIndex+1}}" ng-repeat="level in levelGroups[currentLevelGroup] track by $index" ng-init="levelIndex = $index"> 
+        <div class="levelIsland devResize" ng-class="\'type\'+($index%4 + 1)" role="group" aria-label="{{level.name}}"> 
+            <button type="button" class="levelMode" ng-class="{\'easy\': true, \n \'locked\': (!level[\'modes\'][\'easy\'].active && !level[\'modes\'][\'easy\'].attempt && !level[\'modes\'][\'easy\'].complete), \n 
+            \'unlocked unlockAnim\': (level[\'modes\'][\'easy\'].active && !level[\'modes\'][\'easy\'].attempt && !level[\'modes\'][\'easy\'].complete) && !reviewMode, \n 
+            \'attempted\': (level[\'modes\'][\'easy\'].active && level[\'modes\'][\'easy\'].attempt && !level[\'modes\'][\'easy\'].complete) && !reviewMode, \n 
+            \'completed\': (level[\'modes\'][\'easy\'].active && level[\'modes\'][\'easy\'].attempt && level[\'modes\'][\'easy\'].complete) || (level[\'modes\'][\'easy\'].attempts && level[\'modes\'][\'easy\'].attempts.length >0), \n 
+            \'exhaustAttempts\': (level[\'modes\'][\'easy\'].attempts && level[\'modes\'][\'easy\'].attempts.length >=3) || ((level[\'modes\'][\'challenge\'].attempt == true) || (level[\'modes\'][\'challenge\'].attempts && level[\'modes\'][\'challenge\'].attempts.length>0)), \n 
+            \'instr_review\': (userRole.toLowerCase() == \'teacher\'), \n 
+            \'resume-game\': (!level[\'modes\'][\'easy\'].complete && level[\'modes\'][\'easy\'].currentQuestion>0), \n 
+            \'passed\':IsLevel1PassedOnce(), \n 
+            \'turnedinlocked\': TurnedIn}" ng-click="startLevel($event, level[\'level\'], \'easy\', level[\'modes\'][\'easy\'], levelIndex)" aria-label="{{level.name}}, {{languageTxt.modeNames[\'easy\']}}, {{ (!level[\'modes\'][\'easy\'].active && !level[\'modes\'][\'easy\'].attempt && !level[\'modes\'][\'easy\'].complete) ? \'locked\':\n (level[\'modes\'][\'easy\'].active && !level[\'modes\'][\'easy\'].attempt && !level[\'modes\'][\'easy\'].complete) ? \'unlocked\': (level[\'modes\'][\'easy\'].active && level[\'modes\'][\'easy\'].attempt && !level[\'modes\'][\'easy\'].complete) ?\n \'attempted\': \'completed\' }}">{{languageTxt.modeNames[\'easy\']}} </button>    
+            <button type="button" class="levelMode" ng-class="{\'challenge\': true, \n \'locked\': (!level[\'modes\'][\'challenge\'].active && !level[\'modes\'][\'challenge\'].attempt && !IsLevel1PassedOnce()), \n 
+            \'unlocked unlockAnim\': (level[\'modes\'][\'challenge\'].active && !level[\'modes\'][\'challenge\'].attempt && !level[\'modes\'][\'challenge\'].complete) && !reviewMode, \n 
+            \'attempted\': (level[\'modes\'][\'challenge\'].active && level[\'modes\'][\'challenge\'].attempt && !level[\'modes\'][\'challenge\'].complete) && !reviewMode, \n 
+            \'completed\': (level[\'modes\'][\'challenge\'].active && level[\'modes\'][\'challenge\'].attempt && level[\'modes\'][\'challenge\'].complete) || (level[\'modes\'][\'challenge\'].attempts && level[\'modes\'][\'challenge\'].attempts.length >0), \n 
+            \'exhaustAttempts\': (level[\'modes\'][\'challenge\'].attempts && level[\'modes\'][\'challenge\'].attempts.length >=3), \n 
+            \'instr_review\': (userRole.toLowerCase() == \'teacher\'), \n 
+            \'resume-game\': (!level[\'modes\'][\'challenge\'].complete && level[\'modes\'][\'challenge\'].currentQuestion>0), \n 
+            \'passed\': (IsLevel2PassedOnce()), \n 
+            \'turnedinlocked\': TurnedIn}" ng-click="startLevel($event, level[\'level\'], \'challenge\', level[\'modes\'][\'challenge\'], levelIndex)" aria-label="{{level.name}}, {{languageTxt.modeNames[\'challenge\']}}, {{ (!level[\'modes\'][\'challenge\'].active && !level[\'modes\'][\'challenge\'].attempt && !level[\'modes\'][\'challenge\'].complete) ? \'locked\':\n (level[\'modes\'][\'challenge\'].active && !level[\'modes\'][\'challenge\'].attempt && !level[\'modes\'][\'challenge\'].complete) ? \'unlocked\': (level[\'modes\'][\'challenge\'].active && level[\'modes\'][\'challenge\'].attempt && !level[\'modes\'][\'challenge\'].complete) ?\n \'attempted\': \'completed\' }}">{{languageTxt.modeNames[\'challenge\']}} </button>   
+            <button class="turninbutton" ng-if="((IsLevel2PassedOnce() || (level[\'modes\'][\'challenge\'].attempts && level[\'modes\'][\'challenge\'].attempts.length >=3) || IsLevel1AllAttemptsFailed()) && !reviewMode && !TurnedIn)" ng-click="saveandexit(true)">{{languageTxt.turnIn}}</button> 
+            <button class="turninlink" ng-if="(level[\'modes\'][\'easy\'].attempts && !(level[\'modes\'][\'challenge\'].attempts && level[\'modes\'][\'challenge\'].attempts.length >=3) && !reviewMode && !TurnedIn)" ng-click="saveandexit()">{{languageTxt.turnInLater}}</button> 
+        </div> 
+    </div>
+
+     <div class="endMsgOverlay" role="dialog" aria-modal="true" ng-show="showEndPopup" aria-labelledby=\'endHeading_{{+(checkAllLevelPass() && percentComplete >= unlockThresh && playMode == "challenge")}}\' aria-describedby=\'endMsg_{{+(playMode == "challenge" && percentComplete >= unlockThresh)}}\'> 
+        <div class="overlayBg"></div> 
+        <div class="endGameAnim" ng-show="showFishAnimation"> 
+            <span class="floatingBubblesAnimation" ng-repeat="count in endFloatingBubbles"></span> 
+        </div> 
+        <div class="levelEndPopup"> 
+            <div id="lep_firstElement" tabindex="0"></div> 
+            <span id="endHeading_0" ng-class="{\'tryagainhead\': !(percentComplete >= unlockThresh), \'headblank\': (!(percentComplete >= unlockThresh) && levelAttemptCount >= 3), \'passedonce\': IsLevel1PassedOnce() && playMode == \'easy\', \'chpassedonce\': IsLevel2PassedOnce() && playMode == \'challenge\'}" class="endHeading" ng-if="!(checkAllLevelPass() && percentComplete >= unlockThresh && playMode == \'challenge\')">{{ percentComplete >= unlockThresh ? languageTxt.endPopupHeading.high : (levelAttemptCount < 3 ? languageTxt.endPopupHeading.low : \'\')}}</span> 
+            <span id="endHeading_1" class="endHeading" ng-if="checkAllLevelPass() && percentComplete >= unlockThresh && playMode == \'challenge\'">{{languageTxt.gameCompleted}}</span> 
+            <span id="endMsg_0" class="endMsg endMsg_{{language}}" ng-if="!(playMode == \'challenge\' && percentComplete >= unlockThresh)">{{playMode == \'challenge\' ? languageTxt.youfoundNew : languageTxt.youfound}} {{levelScore}} {{languageTxt.of}} {{wordSet.length}} {{gameAnsType == "letters" ? languageTxt.endPopupLetters : languageTxt.endPopupWords}}{{languageTxt.endPopupCorrectly}}</span> 
+            <span id="endMsg_1" class="endMsg endMsg_{{language}}" ng-if="playMode == \'challenge\' && percentComplete >= unlockThresh">{{languageTxt.youfoundNew}} {{levelScore}} {{languageTxt.of}} {{wordSet.length}} {{gameAnsType == "letters" ? languageTxt.endPopupLetters : languageTxt.endPopupWords}}{{languageTxt.endPopupCorrectly}}</span> 
+            <span id="endMsg_2" class="endMsg endMsg_{{language}}" ng-if="(!(percentComplete >= unlockThresh) && levelAttemptCount < 3)">{{languageTxt.keepgoing}}</span> 
+            <div class="buttonWrapper"> 
+                <div class="buttonInnerWrap" ng-if="playMode == \'easy\' && !(percentComplete >= unlockThresh)"> 
+                    <div id="lep1_firstElement" tabindex="0"></div> 
+                    <button type="button" id="lep1firstbutton" class="lep1 btnlevel1 centerBtn replay-btn" ng-click="endLevelHandler(1)" ng-class="{\'exhaustAttempts\': levelAttemptCount >= 3, \'btnDark_v2\': !IsLevel1PassedOnce(),\'btnLight_v2\': IsLevel1PassedOnce()}" ng-if="!(levelAttemptCount >= 3 && !IsLevel1PassedOnce())">{{languageTxt.modeNames.easy}}</button> 
+                    <button type="button" ng-class="{\'locked\': !IsLevel1PassedOnce()}" class="lep2 btnDark_v2 btnlevel2 centerBtn" ng-click="endLevelHandler(2)" ng-if="!(levelAttemptCount >= 3 && !IsLevel1PassedOnce())">{{languageTxt.modeNames.challenge}}</button> 
+                    <button type="button" id="lep4lastbutton" class="turninbutton centerBtn" ng-click="saveandexit(true)" ng-if="levelAttemptCount >= 3 && !IsLevel1PassedOnce()">{{languageTxt.turnIn}}</button> 
+                    <button id="lep1lastbutton" class="turninlink" ng-click="saveandexit()" ng-if="!(levelAttemptCount >= 3 && !IsLevel1PassedOnce())">{{languageTxt.turnInLater}}</button> 
+                    <div id="lep1_lastElement" tabindex="0"></div> 
+                </div> 
+                <div class="buttonInnerWrap" ng-if="playMode == \'easy\' && (percentComplete >= unlockThresh)"> 
+                    <div id="lep2_firstElement" tabindex="0"></div> 
+                    <button type="button" id="lep2firstbutton" class="lep2 btnLight_v2 centerBtn replay-btn " ng-click="playAgainHandler($event)" ng-class="{\'exhaustAttempts\': levelAttemptCount >= 3}">{{languageTxt.modeNames.easy}}</button> 
+                    <button type="button" class="lep2 btnDark_v2 btnlevel2 centerBtn" ng-click="endLevelHandler(2)">{{languageTxt.modeNames.challenge}}</button> 
+                    <button id="lep2lastbutton" class="turninlink" ng-click="saveandexit()">{{languageTxt.turnInLater}}</button> 
+                    <div id="lep2_lastElement" tabindex="0"></div> 
+                </div> 
+                <div class="buttonInnerWrap" ng-if="playMode == \'challenge\' && !(percentComplete >= unlockThresh)"> 
+                    <div id="lep3_firstElement" tabindex="0"></div> 
+                    <button type="button" id="lep3firstbutton" class="lep3 btnDark_v2 centerBtn btnlevel2 replay-btn" ng-click="endLevelHandler(2)" ng-class="{\'exhaustAttempts\': levelAttemptCount >= 3}" ng-if="!(levelAttemptCount >= 3 && !IsLevel2PassedOnce())">{{languageTxt.modeNames.challenge}}</button> 
+                    <button type="button" id="lep3lastbutton" class="turninbutton centerBtn" ng-if="levelAttemptCount >= 3 || IsLevel2PassedOnce()" ng-click="saveandexit(true)">{{languageTxt.turnIn}}</button> 
+                    <button class="turninlink" id="lep3lastbutton" ng-if="!(levelAttemptCount >= 3)" ng-click="saveandexit()">{{languageTxt.turnInLater}}</button> 
+                    <div id="lep3_lastElement" tabindex="0"></div> 
+                </div> 
+                <div class="buttonInnerWrap" ng-if="playMode == \'challenge\' && (percentComplete >= unlockThresh)"> 
+                    <div id="lep4_firstElement" tabindex="0"></div> 
+                    <button type="button" id="lep4firstbutton" class="lep4 btnLight_v2 centerBtn replay-btn" ng-click="playAgainHandler($event)" ng-class="{\'exhaustAttempts\': levelAttemptCount >= 3}">{{languageTxt.modeNames.challenge}}</button> 
+                    <button type="button" id="lep4lastbutton" class="turninbutton centerBtn" ng-click="saveandexit(true)">{{languageTxt.turnIn}}</button> 
+                    <button class="turninlink" id="lep4lastbutton" ng-if="!(levelAttemptCount >= 3)" ng-click="saveandexit()">{{languageTxt.turnInLater}}</button> 
+                    <div id="lep4_lastElement" tabindex="0"></div> 
+                </div> 
+            </div> 
+        </div> 
+    </div> 
+</body>
+</html>
